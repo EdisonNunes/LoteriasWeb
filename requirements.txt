@@ -1,6 +1,5 @@
-streamlit==1.46.0
+streamlit>=1.32
 requests
-loteria-caixa==0.0.5
-openpyxl
-pillow
 beautifulsoup4
+pillow
+openpyxl

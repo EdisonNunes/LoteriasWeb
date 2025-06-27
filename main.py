@@ -6,7 +6,7 @@
 
 import streamlit as st
 import random
-from loteria_caixa import MegaSena, LotoFacil, DiadeSorte
+import requests
 from pathlib import Path
 #import pandas as pd
 import openpyxl
@@ -138,7 +138,18 @@ def mostrar_faixas_premiacao(lista_rateio):
         texto = formatar_premio(faixa)
         st.markdown(f"- {texto}")
 
-
+def obter_resultado_api(tipo):
+    url_map = {
+        1: "https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil",
+        2: "https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena",
+        3: "https://servicebus2.caixa.gov.br/portaldeloterias/api/diadesorte",
+    }
+    try:
+        response = requests.get(url_map[tipo])
+        if response.ok:
+            return response.json()
+    except:
+        return {}
 
 
 # ---------- Configuração da página ----------
@@ -174,22 +185,21 @@ with tab1:
 
     if tipo_jogo == "LotoFácil":
         tipo = 1
-        resultado = LotoFacil()
-        opcoes = list(map(str, range(15, 21)))
+        opcoes = opcoes_LotoFacil
     elif tipo_jogo == "MegaSena":
         tipo = 2
-        resultado = MegaSena()
-        opcoes = list(map(str, range(6, 16)))
+        opcoes = opcoes_Megasena
     else:
         tipo = 3
-        resultado = DiadeSorte()
-        opcoes = list(map(str, range(7, 16)))
+        opcoes = opcoes_DiaDeSorte
 
     qtd = st.selectbox("Quantidade de números", opcoes, width=200)
 
     # Info da aposta
     chave_aposta = f"{tipo}_{qtd}"
     valor_aposta, probabilidade = st.session_state.dic_dados.get(chave_aposta, ["N/D", "N/D"])
+
+    resultado = obter_resultado_api(tipo)
     data_prox = resultado.dataProximoConcurso()
     valor_estimado = FormataValor(str(resultado.valorEstimadoProximoConcurso()), data_prox)
 
@@ -212,13 +222,15 @@ with tab1:
     msg_placeholder = st.empty()
     bolas_placeholder = st.empty()
     tempo_placeholder = st.empty()
+    mes_placeholder = st.empty()
 
     if st.button("🎲 Sortear Números"):
         # Limpa conteúdo anterior imediatamente
         msg_placeholder.empty()
         bolas_placeholder.empty()
         tempo_placeholder.empty()
-        mes_placeholder = st.empty()
+        mes_placeholder.empty()
+
         # Tempo estimado
         tempo_estimado = st.session_state.tempos_anteriores.get(tipo, 1.0)
         min_est  = int(tempo_estimado // 60)
@@ -237,9 +249,7 @@ with tab1:
             else:
                 numeros = gerar_numeros_simples(tipo, qtd)
                 tempo_total = fim_total - inicio_total  # atualiza tempo para o sorteio aleatório
-                # msg_placeholder.warning("Base de combinações não disponível. Sorteio aleatório simples:")
 
-            # st.markdown("### " + " - ".join(f"{int(n):02d}" for n in numeros if n is not None))
             bolas_placeholder.markdown("### 🎯 Números sorteados:")
             mostrar_bolas_com_imagem(numeros)
 
@@ -247,7 +257,6 @@ with tab1:
             if tipo == 3:
                 mes_sorteado = random.randint(1, 12)
                 mes_nome = MES[mes_sorteado - 1]
-                # mes_placeholder.success(f"📅 Mês da Sorte sorteado: ***{mes_nome}***")
                 mes_placeholder.success(f"📅 Mês da Sorte sorteado\n###### :point_right: {mes_nome}")
 
 
