@@ -1,5 +1,4 @@
 # pip install streamlit
-# pip install loteria_caixa
 # pip install pillow
 # pip install openpyxl
 # pip install beautifulsoup4
@@ -138,16 +137,23 @@ def mostrar_faixas_premiacao(lista_rateio):
         texto = formatar_premio(faixa)
         st.markdown(f"- {texto}")
 
-def obter_resultado_api(tipo):
+def obter_resultado_api(tipo, concurso=None):
     url_map = {
         1: "https://servicebus2.caixa.gov.br/portaldeloterias/api/lotofacil",
         2: "https://servicebus2.caixa.gov.br/portaldeloterias/api/megasena",
         3: "https://servicebus2.caixa.gov.br/portaldeloterias/api/diadesorte",
     }
     try:
-        response = requests.get(url_map[tipo])
-        if response.ok:
+        
+        if concurso:
+            url = url_map[tipo] + f'/{concurso}'
+            response = requests.get(url=url)
+        else:    
+            response = requests.get(url_map[tipo])
+
+        if response.text: 
             return response.json()
+            #return response.text
     except:
         return {}
 
@@ -193,15 +199,16 @@ with tab1:
         tipo = 3
         opcoes = opcoes_DiaDeSorte
 
-    qtd = st.selectbox("Quantidade de números", opcoes, width=200)
+    qtd = st.selectbox("Quantidade de números", options=opcoes, width=200)
 
     # Info da aposta
     chave_aposta = f"{tipo}_{qtd}"
     valor_aposta, probabilidade = st.session_state.dic_dados.get(chave_aposta, ["N/D", "N/D"])
 
     resultado = obter_resultado_api(tipo)
-    data_prox = resultado.dataProximoConcurso()
-    valor_estimado = FormataValor(str(resultado.valorEstimadoProximoConcurso()), data_prox)
+
+    data_prox = resultado['dataProximoConcurso']
+    valor_estimado = FormataValor(str(resultado['valorEstimadoProximoConcurso']), data_prox)
 
     container = st.container(border=True)
     with container:
@@ -217,7 +224,6 @@ with tab1:
             st.markdown(f'<div style="text-align: center; color: orange;"><h5>{valor_estimado}</h5></div>', unsafe_allow_html=True)
 
 
-
     # Placeholders dinâmicos (limpam e atualizam a interface)
     msg_placeholder = st.empty()
     bolas_placeholder = st.empty()
@@ -231,13 +237,14 @@ with tab1:
         tempo_placeholder.empty()
         mes_placeholder.empty()
 
-        # Tempo estimado
-        tempo_estimado = st.session_state.tempos_anteriores.get(tipo, 1.0)
-        min_est  = int(tempo_estimado // 60)
-        seg_est  = int(tempo_estimado % 60)
-        tempo_formatado = f"{min_est} minuto(s) e {seg_est} segundo(s)"
-
-        st.warning(f"⏳ Aguarde enquanto eu busco uma combinação vencedora\n\n👉 Tempo estimado: {tempo_formatado}")
+        if chave_aposta == '1_15' or chave_aposta == '3_7':
+            # Tempo estimado
+            tempo_estimado = st.session_state.tempos_anteriores.get(tipo, 1.0)
+            min_est  = int(tempo_estimado // 60)
+            seg_est  = int(tempo_estimado % 60)
+            tempo_formatado = f"{min_est} minuto(s) e {seg_est} segundo(s)"
+            st.warning(f"⏳ Aguarde enquanto eu busco uma combinação vencedora\n\n👉 Tempo estimado: {tempo_formatado}")
+       
         with st.spinner("Processando sorteio...", show_time=True):
             inicio_total = time.time()
             numeros, tempo_real = sorteio_orientado(tipo, qtd)
@@ -269,6 +276,8 @@ with tab1:
             # Salva tempo para estimativa futura (por tipo)
             st.session_state.tempos_anteriores[tipo] = tempo_total
 
+
+
     # if st.button("📌 Resultado oficial do concurso atual"):
     #     dados = resultado.todosDados()
     #     dezenas = dados.get("listaDezenas", [])
@@ -290,15 +299,17 @@ with tab2:
                          horizontal= True)
 
     if tipo_hist == "LotoFácil":
-        jogo = LotoFacil
+        jogo = 1 # LotoFacil
     elif tipo_hist == "MegaSena":
-        jogo = MegaSena
+        jogo = 2 # MegaSena
     else:
-        jogo = DiadeSorte
+        jogo = 3 #DiadeSorte
+    resultado = obter_resultado_api(jogo)    
 
     # Obtem o número do último concurso automaticamente
     try:
-        ultimo_concurso = jogo().numero()
+        #ultimo_concurso = jogo().numero()
+        ultimo_concurso = resultado['numero']
     except:
         ultimo_concurso = 1000  # fallback caso falhe a API
 
@@ -310,17 +321,18 @@ with tab2:
         value=int(ultimo_concurso),
         format="%d"
     )
-
+    
 
     if st.button("📌 Mostrar resultado do concurso"):
         try:
-            dados = jogo(str(int(num))).todosDados()
+            # dados = jogo(str(int(num))).todosDados()
+            dados = obter_resultado_api(jogo, str(num))
 
             # Cabeçalho com tipo, número e data
             tipo_jogo = dados.get("tipoJogo", "").replace("_", " ").title()
             numero = dados.get("numero", "?")
             data = dados.get("dataApuracao", "?")
-            st.markdown(f"### 🧾 {tipo_jogo} - Concurso {numero} ({data})")
+            st.info(f"### 🧾 {tipo_jogo} - Concurso {numero} em {data}")
 
             # Números sorteados com imagem
             dezenas = dados.get("listaDezenas", [])
