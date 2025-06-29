@@ -36,6 +36,18 @@ def mostrar_bolas_com_imagem(lista_numeros, caminho_fotos="Fotos", colunas_por_l
                 img_reduzida = img.resize((80, 80))  # 👈 Tamanho reduzido
                 st.image(img_reduzida, use_container_width=True)
 
+    for i in range(0, len(imagens), colunas_por_linha):
+        cols = st.columns(colunas_por_linha)
+        for j, img in enumerate(imagens[i:i+colunas_por_linha]):
+            with cols[j]:
+                largura_original, altura_original = img.size
+                nova_largura = 40
+                proporcao = float(nova_largura) / float(largura_original)
+                nova_altura = int(altura_original * proporcao)
+                img_reduzida = img.resize((nova_largura, nova_altura))  # 👈 Tamanho reduzido
+                st.image(img_reduzida, use_container_width=True)
+
+
 def FormataValor(valor, data=None):
     try:
         valor = float(valor.replace(",", "."))
@@ -199,8 +211,17 @@ with tab1:
         tipo = 3
         opcoes = opcoes_DiaDeSorte
 
-    qtd = st.selectbox("Quantidade de números", options=opcoes, width=200)
+    container = st.container(border=False)
+    with container:
+        col1, col2,col3 = st.columns([1, 1, 2])
+        with col1:
+            qtd = st.selectbox("Total de Números", options=opcoes, width=200)
+        with col2:
+            if ((tipo == 1 and qtd == opcoes[0]) or (tipo == 3 and qtd == opcoes[0])):
+                #st.markdown("###🏆 Pesquisa em combinações###")
+                st.markdown(f'<div style="text-align: left; color: orange;"><h5>Pesquisa em combinações</h5></div>', unsafe_allow_html=True)
 
+        
     # Info da aposta
     chave_aposta = f"{tipo}_{qtd}"
     valor_aposta, probabilidade = st.session_state.dic_dados.get(chave_aposta, ["N/D", "N/D"])
