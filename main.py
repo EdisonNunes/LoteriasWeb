@@ -36,16 +36,16 @@ def mostrar_bolas_com_imagem(lista_numeros, caminho_fotos="Fotos", colunas_por_l
                 img_reduzida = img.resize((80, 80))  # 👈 Tamanho reduzido
                 st.image(img_reduzida, use_container_width=True)
 
-    for i in range(0, len(imagens), colunas_por_linha):
-        cols = st.columns(colunas_por_linha)
-        for j, img in enumerate(imagens[i:i+colunas_por_linha]):
-            with cols[j]:
-                largura_original, altura_original = img.size
-                nova_largura = 40
-                proporcao = float(nova_largura) / float(largura_original)
-                nova_altura = int(altura_original * proporcao)
-                img_reduzida = img.resize((nova_largura, nova_altura))  # 👈 Tamanho reduzido
-                st.image(img_reduzida, use_container_width=True)
+    # for i in range(0, len(imagens), colunas_por_linha):
+    #     cols = st.columns(colunas_por_linha)
+    #     for j, img in enumerate(imagens[i:i+colunas_por_linha]):
+    #         with cols[j]:
+    #             largura_original, altura_original = img.size
+    #             nova_largura = 40
+    #             proporcao = float(nova_largura) / float(largura_original)
+    #             nova_altura = int(altura_original * proporcao)
+    #             img_reduzida = img.resize((nova_largura, nova_altura))  # 👈 Tamanho reduzido
+    #             st.image(img_reduzida, use_container_width=True)
 
 
 def FormataValor(valor, data=None):
@@ -173,6 +173,8 @@ def obter_resultado_api(tipo, concurso=None):
 # ---------- Configuração da página ----------
 st.set_page_config(page_title="Sorteio da Sorte", layout="centered")
 inject_css()
+# with open("mobile_style.css") as f:
+#     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 
 hide_streamlit_style = """
