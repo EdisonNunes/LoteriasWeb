@@ -17,6 +17,10 @@ from PIL import Image
 from Funcoes import *
 from styles import inject_css
 
+TOTAL_LINHAS_PRECALCULADAS = {
+    1: 24 * 100000 + 65099,  # tipo 1: LotoFácil
+    3: 16 * 100000 + 6651    # tipo 3: Dia de Sorte
+}
 
 # ----- Funções utilitárias -----
 def mostrar_bolas_com_imagem(lista_numeros, caminho_fotos="Fotos", colunas_por_linha=6):
@@ -47,14 +51,12 @@ def mostrar_bolas_com_imagem(lista_numeros, caminho_fotos="Fotos", colunas_por_l
     #             img_reduzida = img.resize((nova_largura, nova_altura))  # 👈 Tamanho reduzido
     #             st.image(img_reduzida, use_container_width=True)
 
-
 def FormataValor(valor, data=None):
     try:
         valor = float(valor.replace(",", "."))
         return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
     except:
         return valor
-
 
 def encontrar_arquivos_combina(pasta_destino):
     try:
@@ -63,14 +65,6 @@ def encontrar_arquivos_combina(pasta_destino):
     except Exception as e:
         st.error(f"Erro ao buscar arquivos: {e}")
         return []
-
-
-def contar_linhas_excel(caminho_arquivo):
-    try:
-        wb = openpyxl.load_workbook(caminho_arquivo)
-        return wb.active.max_row - 1
-    except:
-        return 0
 
 def obter_linha_eficiente(linha, caminho_arquivo):
     try:
@@ -82,43 +76,30 @@ def obter_linha_eficiente(linha, caminho_arquivo):
         st.error(f"Erro ao ler linha {linha} de {caminho_arquivo}: {e}")
         return None
 
+def sorteio_orientado(tipo, qtd, total_linhas=None):
+    try:
+        if tipo == 2:
+            return None, None  # MegaSena não tem base de combinações
 
-def sorteio_orientado(tipo, qtd):
-    base = ""
-    if tipo == 1 and int(qtd) == 15:
-        base = Path.cwd() / "Combinacoes" / "LotoFacil"
-    elif tipo == 3 and int(qtd) == 7:
-        base = Path.cwd() / "Combinacoes" / "DiaSorte"
-    else:
-        return None, 0.0  # sem sorteio orientado
+        nome_arquivo = f'Combina_{tipo}_{qtd}.xlsx'
+        caminho_arquivo = os.path.join('Combinações', nome_arquivo)
 
-    arquivos = sorted(encontrar_arquivos_combina(str(base)))
-    if not arquivos:
-        return None, 0.0
+        if not os.path.exists(caminho_arquivo):
+            return None, None
 
-    total_linhas = 0
-    linhas_por_arquivo = []
+        if total_linhas is None:
+            return None, None  # evita depender de contagem dinâmica
 
-    for arq in arquivos:
-        n = contar_linhas_excel(arq)
-        linhas_por_arquivo.append(n)
-        total_linhas += n
+        linha_aleatoria = random.randint(0, total_linhas - 1)
 
-    if total_linhas == 0:
-        return None, 0.0
+        df = pd.read_excel(caminho_arquivo, skiprows=linha_aleatoria, nrows=1, engine="openpyxl")
+        numeros = df.iloc[0].tolist()
+        numeros = [int(n) for n in numeros if pd.notna(n)]
 
-    sorteada = random.randint(0, total_linhas - 1)
-    acumulado = 0
-    for i, n in enumerate(linhas_por_arquivo):
-        if sorteada < acumulado + n:
-            inicio = time.time()
-            numeros = obter_linha_eficiente(sorteada - acumulado, arquivos[i])
-            fim = time.time()
-            return numeros, fim - inicio
-        acumulado += n
-
-    return None, 0.0
-
+        return numeros, total_linhas
+    except Exception as e:
+        print("Erro no sorteio orientado:", e)
+        return None, None
 
 def gerar_numeros_simples(tipo, qtd):
     if tipo == 1:
@@ -260,17 +241,10 @@ with tab1:
         tempo_placeholder.empty()
         mes_placeholder.empty()
 
-        if chave_aposta == '1_15' or chave_aposta == '3_7':
-            # Tempo estimado
-            tempo_estimado = st.session_state.tempos_anteriores.get(tipo, 1.0)
-            min_est  = int(tempo_estimado // 60)
-            seg_est  = int(tempo_estimado % 60)
-            tempo_formatado = f"{min_est} minuto(s) e {seg_est} segundo(s)"
-            st.warning(f"⏳ Aguarde enquanto eu busco uma combinação vencedora\n\n👉 Tempo estimado: {tempo_formatado}")
-       
         with st.spinner("Processando sorteio...", show_time=True):
             inicio_total = time.time()
-            numeros, tempo_real = sorteio_orientado(tipo, qtd)
+            # numeros, tempo_real = sorteio_orientado(tipo, qtd)
+            numeros, _ = sorteio_orientado(tipo, qtd, total_linhas=TOTAL_LINHAS_PRECALCULADAS.get(tipo))
             fim_total = time.time()
             tempo_total = fim_total - inicio_total
 
@@ -299,21 +273,6 @@ with tab1:
             # Salva tempo para estimativa futura (por tipo)
             st.session_state.tempos_anteriores[tipo] = tempo_total
 
-
-
-    # if st.button("📌 Resultado oficial do concurso atual"):
-    #     dados = resultado.todosDados()
-    #     dezenas = dados.get("listaDezenas", [])
-    #     st.info("Números sorteados:")
-
-    #     mostrar_bolas_com_imagem(dezenas)
-    #     if dados.get("listaRateioPremio"):
-    #         mostrar_faixas_premiacao(dados["listaRateioPremio"])
-    #     # Exibir Mês da Sorte se for Dia de Sorte
-    #     if dados.get("tipoJogo") == "DIA_DE_SORTE":
-    #         mes = dados.get("mesSorte")
-    #         if mes:
-    #             st.success(f"📅 Mês da Sorte: **{mes.upper()}**")    
 
 with tab2:
     st.subheader("🔍 Consultar resultado de concursos anteriores")
