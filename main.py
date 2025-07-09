@@ -214,6 +214,9 @@ with tab1:
     data_prox = resultado['dataProximoConcurso']
     valor_estimado = FormataValor(str(resultado['valorEstimadoProximoConcurso']), data_prox)
 
+    texto = f'Data do Sorteio 👉 {data_prox}'
+    st.markdown(f'<div style="text-align: left; color: lightgray;"><h5>{texto}</h5></div>', unsafe_allow_html=True)
+
     container = st.container(border=True)
     with container:
         col1, col2, col3 = st.columns([1, 1, 1])
