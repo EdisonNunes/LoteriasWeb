@@ -38,7 +38,8 @@ def mostrar_bolas_com_imagem(lista_numeros, caminho_fotos="Fotos", colunas_por_l
         for j, img in enumerate(imagens[i:i+colunas_por_linha]):
             with cols[j]:
                 img_reduzida = img.resize((80, 80))  # 👈 Tamanho reduzido
-                st.image(img_reduzida, use_container_width=True)
+                #st.image(img_reduzida, use_container_width=True)
+                st.image(img_reduzida)
 
     # for i in range(0, len(imagens), colunas_por_linha):
     #     cols = st.columns(colunas_por_linha)
@@ -198,7 +199,8 @@ with tab1:
     with container:
         col1, col2,col3 = st.columns([1, 1, 2])
         with col1:
-            qtd = st.selectbox("Total de Números", options=opcoes, width=200)
+            #qtd = st.selectbox("Total de Números", options=opcoes, width=200)
+            qtd = st.selectbox("Total de Números", options=opcoes)
         with col2:
             if ((tipo == 1 and qtd == opcoes[0]) or (tipo == 3 and qtd == opcoes[0])):
                 #st.markdown("###🏆 Pesquisa em combinações###")
@@ -207,8 +209,8 @@ with tab1:
         
     # Info da aposta
     chave_aposta = f"{tipo}_{qtd}"
-    valor_aposta, probabilidade = st.session_state.dic_dados.get(chave_aposta, ["N/D", "N/D"])
 
+    valor_aposta, probabilidade = st.session_state.dic_dados.get(chave_aposta, ["N/D", "N/D"])
     resultado = obter_resultado_api(tipo)
 
     data_prox = resultado['dataProximoConcurso']
@@ -244,7 +246,8 @@ with tab1:
         tempo_placeholder.empty()
         mes_placeholder.empty()
 
-        with st.spinner("Processando sorteio...", show_time=True):
+        #with st.spinner("Processando sorteio...", show_time=True):
+        with st.spinner("Processando sorteio..."):
             inicio_total = time.time()
             # numeros, tempo_real = sorteio_orientado(tipo, qtd)
             numeros, _ = sorteio_orientado(tipo, qtd, total_linhas=TOTAL_LINHAS_PRECALCULADAS.get(tipo))
@@ -298,14 +301,18 @@ with tab2:
     except:
         ultimo_concurso = 1000  # fallback caso falhe a API
 
-    num = st.number_input(
-        "Número do concurso",
-        min_value=1,
-        step=1,
-        width=200,
-        value=int(ultimo_concurso),
-        format="%d"
-    )
+    container = st.container(border=False)
+    with container:
+            col1, col2, col3 = st.columns([1, 1, 1])
+            with col1:
+                num = st.number_input(
+                    "Número do concurso",
+                    min_value=1,
+                    step=1,
+                    #width=200,
+                    value=int(ultimo_concurso),
+                    format="%d"
+                )
     
 
     if st.button("📌 Mostrar resultado do concurso"):

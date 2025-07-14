@@ -48,12 +48,14 @@ def BuscaPrecoLotoFacil(url):
             while len(l0) < 10:
                 l0 = l0 + ' '
 
-            lista.append('R$ ' + l0)
+            #lista.append('R$ ' + l0)
+            lista.append(l0)
             lista.append(lista_prob[j])
+
             dic_dados[chave] = lista
             j += 1
         #print(l0)
-    #print(dicionario)
+    # print(dic_dados)
 
 def BuscaPrecoMegaSena(url):
     requisicao = requests.get(url, headers=headers)
@@ -72,7 +74,7 @@ def BuscaPrecoMegaSena(url):
     ############### Tabela de Preços #############################
     corpo = tabela[2].find('tbody')  # 3ª Tabela do site
     linhas = corpo.find_all('tr')
-
+    
     j = 0
     for i, linha in enumerate(linhas):
         lista=[]
@@ -82,17 +84,23 @@ def BuscaPrecoMegaSena(url):
         l1 = l1.replace('<tr>', '')
         l1 = l1.replace('</tr>', '').strip()
         l1 = l1.replace('<br/>', '').split()
-
-        while len(l1[1]) < 10:
-            l1[1] = l1[1] + ' '
+        
+        # while len(l1[1]) < 10:
+        #     l1[1] = l1[1] + ' '
+        # while len(l1[2]) < 10:
+        #     l1[2] = l1[2] + ' '
         while len(l1[2]) < 10:
             l1[2] = l1[2] + ' '
+        while len(l1[3]) < 10:
+            l1[3] = l1[3] + ' '
 
         #while len(l1[2]) < 13:
         #    l1[2] = l1[2] + ' '
-        lista.append('R$ ' + l1[1])
-        lista.append('1 em ' + l1[2])
-
+        # lista.append('R$ ' + l1[1])
+        # lista.append('1 em ' + l1[2])
+        lista.append('R$ ' + l1[2])
+        lista.append('1 em ' + l1[3])
+        #print(lista)
         chave = '2_' + l1[0].strip()
 
         dic_dados.update({chave:lista})
